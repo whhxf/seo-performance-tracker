@@ -1,6 +1,6 @@
 ---
 name: seo-performance-tracker
-description: 引导用户配置 GSC/GA4/Bing API，通过本地脚本让 AI Agent 用自然语言查询 SEO 数据并生成分析报告。适用场景：跟踪 SEO 表现、效果追踪、查看某站排名与流量、自动分析 GSC/GA4 数据、定时 SEO 报告、独立站周报、每周固定复盘。触发词：SEO 表现、跟踪 SEO、效果追踪、帮我看看某站 SEO、GSC 数据、GA4 报告、Search Console、自动分析 SEO、SEO 监控、周报、每周复盘、独立站周报、weekly report。
+description: 引导用户配置 GSC/GA4/Bing API，通过本地脚本让 AI Agent 用自然语言查询 SEO 数据并生成分析报告。只要用户提到 SEO 表现、效果追踪、GSC、GA4、Bing、Search Console、独立站周报、weekly report、排名与流量、定时报告等，优先考虑使用本 skill。适用场景：跟踪 SEO 表现、查看某站排名与流量、自动分析 GSC/GA4 数据、独立站周报、每周固定复盘。触发词：SEO 表现、跟踪 SEO、效果追踪、帮我看看某站 SEO、GSC 数据、GA4 报告、Search Console、自动分析 SEO、SEO 监控、周报、每周复盘、独立站周报、weekly report。
 ---
 
 # SEO 表现跟踪（AI Agent 驱动）
@@ -31,6 +31,8 @@ description: 引导用户配置 GSC/GA4/Bing API，通过本地脚本让 AI Agen
 
 ## 配置流程（按顺序执行）
 
+**配置入口**：所有参数均在本 skill 目录下通过 **环境变量文件** 配置。复制 `env.example` 为 `.env`，填写后保存（勿提交 `.env` 到 Git）。脚本与 Agent 从该 `.env` 读取凭证路径与 API Key。
+
 总时长约 **60 分钟**，一次性配置后可持续使用。
 
 ### 第一步：Google Cloud Console（约 15 分钟）
@@ -40,7 +42,7 @@ description: 引导用户配置 GSC/GA4/Bing API，通过本地脚本让 AI Agen
 3. 进入 **IAM & Admin → Service Accounts**
 4. **Create Service Account**，名称如 `openclaw-seo-reader`；角色可先不选，后续在各产品单独授权
 5. 创建后进入该 SA → **Keys → Add Key → Create new key → JSON**
-6. 下载 JSON，保存到 **`~/.openclaw/workspace/credentials/gcp-service-account.json`**（或项目内 `credentials/`，路径需与脚本一致）
+6. 下载 JSON，保存到**本 skill 目录下的 `credentials/gcp-service-account.json`**（本目录已通过 `.gitignore` 忽略 `credentials/`）。在 `.env` 中设置 **`GCP_CREDENTIALS_PATH=credentials/gcp-service-account.json`**（从本 skill 目录执行脚本时用该相对路径即可）。
 
 ### 第二步：Google Search Console 授权（约 10 分钟）
 
@@ -63,7 +65,7 @@ description: 引导用户配置 GSC/GA4/Bing API，通过本地脚本让 AI Agen
 1. 打开 [Bing Webmaster Tools](https://www.bing.com/webmasters)
 2. 右上角 **设置（齿轮）→ API access**
 3. 点击 **Generate API Key**
-4. 将 API Key 保存到 **`~/.openclaw/workspace/credentials/bing-webmaster-api-key.txt`**（或项目内约定路径）
+4. 将 API Key 填入本 skill 目录下 `.env` 中的 **`BING_WEBMASTER_API_KEY`**（勿提交到 Git）。
 
 ### 第五步：安装依赖（约 5 分钟）
 
@@ -89,24 +91,26 @@ description: 引导用户配置 GSC/GA4/Bing API，通过本地脚本让 AI Agen
 - `node scripts/ga4-report.cjs <站点代号> 7` → 最近 7 天 GA4
 - `node scripts/bing-report.cjs` → Bing Webmaster 数据
 
-站点代号与 GSC/GA4 中站点或 Property 的对应关系，由用户在本地配置（如 JSON 或环境变量）。
+站点代号与 GSC/GA4 中站点或 Property 的对应关系，由用户在 `.env` 中通过 **`DEFAULT_SITE`** 等配置（详见 `env.example`）。
 
 ---
 
 ## 推荐工作区结构
 
-```
-workspace/
-├── scripts/
-│   ├── gsc-report.cjs    # GSC 查询
-│   ├── ga4-report.cjs    # GA4 查询
-│   └── bing-report.cjs   # Bing Webmaster 查询
-└── credentials/
-    ├── gcp-service-account.json
-    └── bing-webmaster-api-key.txt
-```
-
-路径可与 OpenClaw 的 `~/.openclaw/workspace/` 一致，或本项目下的 `scripts/`、`credentials/`（注意勿提交密钥到 Git）。
+- **本 skill 目录**：放置 `SKILL.md`、`weekly-report.md`、**`.env`**（由 `env.example` 复制并填写）、可选 `scripts/`。
+- 若脚本放在本 skill 内：
+  ```
+  seo-performance-tracker/
+  ├── SKILL.md
+  ├── env.example
+  ├── .env              # 勿提交
+  ├── scripts/
+  │   ├── gsc-report.cjs
+  │   ├── ga4-report.cjs
+  │   └── bing-report.cjs
+  └── credentials/      # 可选，存 GCP JSON 等；勿提交
+  ```
+- 凭证与密钥：仅通过 `.env` 中的路径或键值引用，不提交到 Git；`.gitignore` 已包含 `.env`、`credentials/`。
 
 ---
 
@@ -122,7 +126,7 @@ workspace/
    - **GA4**：活跃用户、流量来源、热门页面
    - **Bing**：爬取状态、Top 关键词
    - **行动建议**：1～3 条可执行、带优先级的建议
-5. **安全**：不要求用户把密钥贴到对话里；只引导把密钥放到本地文件，脚本本地读取。
+5. **安全**：不要求用户把密钥贴到对话里。所有配置仅在本 skill 目录下的 `.env` 中完成（复制 `env.example` 为 `.env` 后填写）；脚本或 Agent 从该 `.env` 读取凭证路径与 API Key。
 
 ---
 
@@ -374,7 +378,7 @@ workspace/
 
 ## 安全与踩坑（简要）
 
-- **密钥**：仅存本地，不写入对话、不提交版本库；`.gitignore` 应包含 `credentials/`。
+- **配置**：仅在本 skill 目录下使用 `.env`（由 `env.example` 复制）；密钥与凭证路径写在 `.env` 中，不写入对话、不提交版本库。本 skill 已提供 `.gitignore`，包含 `.env`、`credentials/`。
 - **GSC**：若多站点，每个站点都需在「用户和权限」里添加同一 Service Account 的 client_email。
 - **GA4**：需在「媒体资源」级别授权，且 API 需在 GCP 项目中启用（如 Analytics Data API）。
 - **Bing**：API Key 仅需在 Webmaster 后台生成并保存到本地文件。
