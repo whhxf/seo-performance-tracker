@@ -8,12 +8,14 @@
  *   node gsc-report.cjs [站点代号] [天数] --queries         拉取 Top 500 关键词（含完整排名数据）
  *   node gsc-report.cjs [站点代号] [天数] --daily           按 date 维度拆分（每日数据，用于趋势追踪）
  *   node gsc-report.cjs [站点代号] [天数] --query "关键词"  查询特定关键词的完整表现
+ *   node gsc-report.cjs [站点代号] --queries --start-date=2026-03-23 --end-date=2026-03-29  自定义日期范围
  *
  * 示例:
  *   node gsc-report.cjs default 7
  *   node gsc-report.cjs default 30 --queries
  *   node gsc-report.cjs default 30 --daily
  *   node gsc-report.cjs default 30 --query "video hosting"
+ *   node gsc-report.cjs default --queries --start-date=2026-03-23 --end-date=2026-03-29
  */
 
 const fs = require('fs');
@@ -27,6 +29,8 @@ const siteCode = args.find(a => !a.startsWith('--')) || 'default';
 const days = parseInt(args.find(a => !a.startsWith('--') && a !== siteCode)) || 7;
 const queryFlag = flags.find(f => f.startsWith('--query='));
 const queryValue = queryFlag ? queryFlag.split('=')[1] : null;
+const startDateFlag = flags.find(f => f.startsWith('--start-date='));
+const endDateFlag = flags.find(f => f.startsWith('--end-date='));
 const mode = flags.includes('--queries') ? 'queries' :
              flags.includes('--daily') ? 'daily' :
              queryValue ? 'singleQuery' : 'overview';
@@ -45,10 +49,18 @@ if (!siteConfig) {
 
 const credentialsPath = expandPath(config.credentials.gcp_key_path);
 
-// 计算日期范围
-const endDate = new Date();
-const startDate = new Date();
-startDate.setDate(startDate.getDate() - days);
+// 计算日期范围（支持自定义日期范围）
+let endDate, startDate, computedDays;
+if (startDateFlag && endDateFlag) {
+  startDate = new Date(startDateFlag.split('=')[1]);
+  endDate = new Date(endDateFlag.split('=')[1]);
+  computedDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
+} else {
+  endDate = new Date();
+  startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  computedDays = days;
+}
 
 const formatDate = (d) => d.toISOString().split('T')[0];
 
@@ -107,7 +119,7 @@ async function getGSCData() {
       const result = {
         _source: 'gsc',
         site: siteConfig.gsc_url,
-        period: { start: formatDate(startDate), end: formatDate(endDate), days },
+        period: { start: formatDate(startDate), end: formatDate(endDate), days: computedDays },
         overall: {
           clicks: overall.clicks || 0,
           impressions: overall.impressions || 0,
@@ -155,7 +167,7 @@ async function getGSCData() {
       const result = {
         _source: 'gsc',
         site: siteConfig.gsc_url,
-        period: { start: formatDate(startDate), end: formatDate(endDate), days },
+        period: { start: formatDate(startDate), end: formatDate(endDate), days: computedDays },
         totalQueries: (queryResponse.data.rows || []).length,
         queries: (queryResponse.data.rows || []).map(row => ({
           query: row.keys[0],
@@ -189,7 +201,7 @@ async function getGSCData() {
       const result = {
         _source: 'gsc',
         site: siteConfig.gsc_url,
-        period: { start: formatDate(startDate), end: formatDate(endDate), days },
+        period: { start: formatDate(startDate), end: formatDate(endDate), days: computedDays },
         daily: dailyRows
       };
 
@@ -224,7 +236,7 @@ async function getGSCData() {
         _source: 'gsc',
         site: siteConfig.gsc_url,
         query: queryValue,
-        period: { start: formatDate(startDate), end: formatDate(endDate), days },
+        period: { start: formatDate(startDate), end: formatDate(endDate), days: computedDays },
         total: {
           clicks: totalClicks,
           impressions: totalImp,
@@ -236,6 +248,65 @@ async function getGSCData() {
         daily: dailyRows
       };
 
+      console.log(JSON.stringify(result, null, 2));
+    }
+
+    // ========== 自定义日期范围模式 ==========
+    else if (mode === 'overview' && startDateFlag && endDateFlag) {
+      const queryResponse = await searchconsole.searchanalytics.query({
+        ...baseParams,
+        requestBody: { ...baseParams.requestBody, dimensions: ['query'], rowLimit: 500 }
+      });
+
+      const pageResponse = await searchconsole.searchanalytics.query({
+        ...baseParams,
+        requestBody: { ...baseParams.requestBody, dimensions: ['page'], rowLimit: 20 }
+      });
+
+      const overallResponse = await searchconsole.searchanalytics.query({
+        ...baseParams,
+        requestBody: { ...baseParams.requestBody, aggregationType: 'auto' }
+      });
+      const overall = overallResponse.data.rows?.[0] || { clicks: 0, impressions: 0, ctr: 0, position: 0 };
+
+      const result = {
+        _source: 'gsc',
+        site: siteConfig.gsc_url,
+        period: { start: formatDate(startDate), end: formatDate(endDate), days: computedDays },
+        overall: {
+          clicks: overall.clicks || 0,
+          impressions: overall.impressions || 0,
+          ctr: Math.round((overall.ctr || 0) * 1000) / 10,
+          avgPosition: Math.round((overall.position || 0) * 100) / 100
+        },
+        topQueries: (queryResponse.data.rows || []).map(row => ({
+          query: row.keys[0],
+          clicks: row.clicks,
+          impressions: row.impressions,
+          ctr: Math.round(row.ctr * 1000) / 10,
+          avgPosition: Math.round(row.position * 100) / 100
+        })).sort((a, b) => b.impressions - a.impressions),
+        topPages: (pageResponse.data.rows || []).map(row => ({
+          page: row.keys[0],
+          clicks: row.clicks,
+          impressions: row.impressions,
+          ctr: Math.round(row.ctr * 1000) / 10,
+          avgPosition: Math.round(row.position * 100) / 100
+        })),
+        opportunities: (queryResponse.data.rows || [])
+          .filter(row => row.impressions >= 100 && row.ctr < 0.05)
+          .map(row => ({
+            query: row.keys[0],
+            impressions: row.impressions,
+            clicks: row.clicks,
+            ctr: Math.round(row.ctr * 1000) / 10,
+            avgPosition: Math.round(row.position * 100) / 100
+          }))
+          .slice(0, 10)
+      };
+
+      const saved = saveToHistory(result);
+      result._savedTo = saved;
       console.log(JSON.stringify(result, null, 2));
     }
 
