@@ -46,6 +46,20 @@ GSC/GA4 的授权步骤（为 SA 的 client_email 在 Search Console 与 GA4 中
 
 Agent 会按 SKILL.md 与 `weekly-report.md` 执行：调用脚本拉取数据、按模板生成报告，周报会存档到 `outputs/weekly-report-YYYY-MM-DD.md`。
 
+### 查询关键词排名变化
+
+| 场景 | 命令 |
+|------|------|
+| 最近 N 天完整关键词排名 | `node scripts/gsc-report.cjs default N --queries` |
+| 自定义日期范围（如某一周） | `node scripts/gsc-report.cjs default --queries --start-date=2026-03-23 --end-date=2026-03-29` |
+| 某个词的每日排名走势 | `node scripts/gsc-report.cjs default 30 --daily --query="视频翻译"` |
+| 查看历史查询记录 | `node scripts/history-store.cjs list` |
+| 某个词的历史排名变化 | `node scripts/history-store.cjs compare "视频 hosting" 90` |
+| 生成某个词的排名趋势报告 | `node scripts/history-store.cjs trend "kingsway" md` |
+| 导出所有历史数据汇总 | `node scripts/history-store.cjs export md 90` |
+
+> 所有查询结果自动存档到 `history/`，导出文件存放在 `outputs/`。这两个目录已在 `.gitignore` 中排除，不会推送到远程。
+
 ---
 
 ## 脚本说明与迁移

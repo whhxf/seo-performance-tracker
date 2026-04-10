@@ -39,7 +39,24 @@ node scripts/gsc-report.cjs default 7                     # 默认概览（Top 2
 node scripts/gsc-report.cjs default 30 --queries          # 拉取 Top 500 关键词
 node scripts/gsc-report.cjs default 30 --daily            # 按日期拆分（每日数据）
 node scripts/gsc-report.cjs default 30 --query="视频翻译"  # 查特定关键词的每日表现
+
+# 自定义日期范围（查询任意历史时段）
+node scripts/gsc-report.cjs default --queries --start-date=2026-03-23 --end-date=2026-03-29
+node scripts/gsc-report.cjs default --start-date=2026-03-01 --end-date=2026-03-31
 ```
+
+### 常见场景速查
+
+| 用户说 | Agent 调用 |
+|--------|-----------|
+| "最近 7 天 GSC 数据" | `gsc-report.cjs default 7` |
+| "最近 30 天完整关键词排名" | `gsc-report.cjs default 30 --queries` |
+| "上上周（3/23-3/29）的关键词排名" | `gsc-report.cjs default --queries --start-date=2026-03-23 --end-date=2026-03-29` |
+| "某个词的每日排名变化" | `gsc-report.cjs default 30 --daily --query="关键词"` |
+| "看下历史查询记录" | `history-store.cjs list` |
+| "某个词的历史排名变化" | `history-store.cjs compare "关键词" 90` |
+| "生成某个词的排名趋势图" | `history-store.cjs trend "关键词" md` |
+| "导出所有历史关键词数据" | `history-store.cjs export md 90` |
 
 ## 目标效果
 
