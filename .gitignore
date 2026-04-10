@@ -1,0 +1,17 @@
+# 勿提交密钥与本地配置
+.env
+*.key
+*.pem
+credentials/*
+!credentials/.gitkeep
+*-credentials*.json
+bing-webmaster-api-key.txt
+
+# 脚本本地配置与依赖
+scripts/config.json
+scripts/node_modules
+
+# 历史数据与导出输出（可选提交）
+history/
+outputs/
+.DS_Store

@@ -1,0 +1,11 @@
+{
+  "credentials": {
+    "gcp_key_path": "../credentials/gcp-service-account.json"
+  },
+  "sites": {
+    "default": {
+      "gsc_url": "sc-domain:your-domain.com",
+      "ga4_property_id": "123456789"
+    }
+  }
+}
