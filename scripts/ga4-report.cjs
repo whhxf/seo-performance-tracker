@@ -29,7 +29,7 @@ if (!siteConfig) {
   process.exit(1);
 }
 
-const credentialsPath = expandPath(config.credentials.gcp_key_path);
+const credentialsPath = path.resolve(__dirname, config.credentials.gcp_key_path);
 
 const endDate = new Date();
 const startDate = new Date();

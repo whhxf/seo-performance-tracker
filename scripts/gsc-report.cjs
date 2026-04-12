@@ -47,7 +47,7 @@ if (!siteConfig) {
   process.exit(1);
 }
 
-const credentialsPath = expandPath(config.credentials.gcp_key_path);
+const credentialsPath = path.resolve(__dirname, config.credentials.gcp_key_path);
 
 // 计算日期范围（支持自定义日期范围）
 let endDate, startDate, computedDays;

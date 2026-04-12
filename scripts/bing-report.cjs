@@ -29,7 +29,7 @@ if (!siteConfig) {
 }
 
 // 读取 Bing API Key
-const apiKeyPath = expandPath(config.credentials.bing_api_key_path);
+const apiKeyPath = path.resolve(__dirname, config.credentials.bing_api_key_path);
 if (!fs.existsSync(apiKeyPath)) {
   console.error(JSON.stringify({ error: `Bing API Key 文件不存在: ${apiKeyPath}` }));
   process.exit(1);
